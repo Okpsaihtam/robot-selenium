@@ -1,6 +1,9 @@
 # Robot Selenium : parcours d'achat automatisé
 
-Script Python qui pilote Google Chrome avec **Selenium** pour réaliser tout seul un parcours d'achat complet sur le site de démonstration [saucedemo.com](https://www.saucedemo.com).
+Script Python qui pilote Google Chrome avec **Selenium** pour réaliser tout seul un parcours d'achat complet sur le site de démonstration [Démo du robot](demo.gif).
+
+
+## Ce que fait le robot
 
 ## Ce que fait le robot
 

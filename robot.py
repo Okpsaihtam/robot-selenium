@@ -5,7 +5,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 
 # Temps de pause entre chaque action (en secondes), pour bien voir ce qui se passe
-PAUSE = 1.5
+PAUSE = 0.8
 
 
 def pause():
