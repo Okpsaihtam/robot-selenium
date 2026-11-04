@@ -1,0 +1,32 @@
+name: Test Selenium
+
+# Quand lancer le test : à chaque push, ou à la main depuis GitHub
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   # un ordinateur Linux fourni par GitHub
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer Selenium
+        run: pip install -r requirements.txt
+
+      - name: Lancer le test
+        run: python robot.py
+
+      - name: Sauvegarder la capture d'écran en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capture-erreur
+          path: erreur.png  
