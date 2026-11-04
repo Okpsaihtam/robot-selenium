@@ -14,7 +14,7 @@ def pause():
     time.sleep(PAUSE)
 
 
-# ---------- Fonctions utiles ----------
+# ---------- Fonctions de vérification ----------
 nombre_verifications = 0
 
 
@@ -31,6 +31,28 @@ def verifier(condition, description):
 def prix_en_nombre(texte):
     """Transforme un prix affiché ("$29.99") en nombre (29.99)."""
     return float(texte.replace("$", ""))
+
+
+# ---------- Fonctions d'action (elles attendent TOUJOURS que l'élément soit prêt) ----------
+def trouver(par, valeur):
+    """Attend qu'un élément soit visible, puis le renvoie."""
+    return wait.until(EC.visibility_of_element_located((par, valeur)))
+
+
+def trouver_tous(par, valeur):
+    """Attend qu'au moins un élément soit visible, puis les renvoie tous."""
+    trouver(par, valeur)
+    return driver.find_elements(par, valeur)
+
+
+def cliquer(par, valeur):
+    """Attend qu'un élément soit cliquable, puis clique dessus."""
+    wait.until(EC.element_to_be_clickable((par, valeur))).click()
+
+
+def ecrire(par, valeur, texte):
+    """Attend qu'un champ soit visible, puis tape le texte dedans."""
+    trouver(par, valeur).send_keys(texte)
 
 
 # ---------- Préparation de Chrome ----------
@@ -56,89 +78,90 @@ try:
     # ---------- 1. Ouvrir le site ----------
     print("1. Ouverture du site")
     driver.get("https://www.saucedemo.com")
+    trouver(By.ID, "login-button")
     verifier(driver.title == "Swag Labs", "Le site est bien ouvert")
     pause()
 
     # ---------- 2. Se connecter ----------
     print("2. Connexion")
-    driver.find_element(By.ID, "user-name").send_keys("standard_user")
+    ecrire(By.ID, "user-name", "standard_user")
     pause()
-    driver.find_element(By.ID, "password").send_keys("secret_sauce")
+    ecrire(By.ID, "password", "secret_sauce")
     pause()
-    driver.find_element(By.ID, "login-button").click()
-    wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "inventory_list")))
+    cliquer(By.ID, "login-button")
 
+    produits = trouver_tous(By.CLASS_NAME, "inventory_item")
     verifier("inventory" in driver.current_url, "On est sur la page des produits")
-    produits = driver.find_elements(By.CLASS_NAME, "inventory_item")
     verifier(len(produits) == 6, "Les 6 produits sont affichés")
     pause()
 
     # ---------- 3. Trier les produits par prix ----------
     print("3. Tri des produits du moins cher au plus cher")
-    Select(driver.find_element(By.CLASS_NAME, "product_sort_container")).select_by_value("lohi")
+    Select(trouver(By.CLASS_NAME, "product_sort_container")).select_by_value("lohi")
     pause()
 
-    prix = [prix_en_nombre(p.text) for p in driver.find_elements(By.CLASS_NAME, "inventory_item_price")]
+    prix = [prix_en_nombre(p.text) for p in trouver_tous(By.CLASS_NAME, "inventory_item_price")]
     print("   Prix affichés :", prix)
     verifier(prix == sorted(prix), "Les prix sont bien triés du moins cher au plus cher")
 
     # ---------- 4. Ajouter 2 produits au panier ----------
     print("4. Ajout de 2 produits au panier")
-    driver.find_element(By.ID, "add-to-cart-sauce-labs-backpack").click()
+    cliquer(By.ID, "add-to-cart-sauce-labs-backpack")
     pause()
-    driver.find_element(By.ID, "add-to-cart-sauce-labs-bike-light").click()
+    cliquer(By.ID, "add-to-cart-sauce-labs-bike-light")
     pause()
-    nombre = driver.find_element(By.CLASS_NAME, "shopping_cart_badge").text
+    nombre = trouver(By.CLASS_NAME, "shopping_cart_badge").text
     verifier(nombre == "2", "Le panier affiche 2 articles")
 
     # ---------- 5. Ouvrir le panier ----------
     print("5. Ouverture du panier")
-    driver.find_element(By.CLASS_NAME, "shopping_cart_link").click()
-    wait.until(EC.url_contains("cart"))
+    cliquer(By.CLASS_NAME, "shopping_cart_link")
+    trouver(By.ID, "checkout")  # on attend que la page du panier soit affichée
     pause()
 
-    noms_panier = [n.text for n in driver.find_elements(By.CLASS_NAME, "inventory_item_name")]
+    noms_panier = [n.text for n in trouver_tous(By.CLASS_NAME, "inventory_item_name")]
     print("   Produits dans le panier :", noms_panier)
     verifier("Sauce Labs Backpack" in noms_panier, "Le sac à dos est dans le panier")
     verifier("Sauce Labs Bike Light" in noms_panier, "La lampe de vélo est dans le panier")
 
     # On calcule nous-mêmes le total attendu
-    prix_panier = [prix_en_nombre(p.text) for p in driver.find_elements(By.CLASS_NAME, "inventory_item_price")]
+    prix_panier = [prix_en_nombre(p.text) for p in trouver_tous(By.CLASS_NAME, "inventory_item_price")]
     total_attendu = round(sum(prix_panier), 2)
 
     # ---------- 6. Passer commande ----------
     print("6. Remplissage du formulaire de commande")
-    driver.find_element(By.ID, "checkout").click()
+    cliquer(By.ID, "checkout")
     pause()
-    driver.find_element(By.ID, "first-name").send_keys("Jean")
+    ecrire(By.ID, "first-name", "Jean")
     pause()
-    driver.find_element(By.ID, "last-name").send_keys("Dupont")
+    ecrire(By.ID, "last-name", "Dupont")
     pause()
-    driver.find_element(By.ID, "postal-code").send_keys("75001")
+    ecrire(By.ID, "postal-code", "75001")
     pause()
-    driver.find_element(By.ID, "continue").click()
+    cliquer(By.ID, "continue")
 
-    sous_total = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "summary_subtotal_label"))).text
+    sous_total = trouver(By.CLASS_NAME, "summary_subtotal_label").text
     print("   Affiché par le site :", sous_total, "| Calculé par le robot :", total_attendu)
     verifier(sous_total == f"Item total: ${total_attendu}", "Le montant de la commande est correct")
     pause()
-    driver.find_element(By.ID, "finish").click()
+    cliquer(By.ID, "finish")
 
     # ---------- 7. Lire la confirmation ----------
-    message = wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "complete-header"))).text
+    message = trouver(By.CLASS_NAME, "complete-header").text
     print("7. Message affiché :", message)
     verifier(message == "Thank you for your order!", "La commande est confirmée")
     pause()
 
     # ---------- 8. Retour à l'accueil et déconnexion ----------
     print("8. Retour à l'accueil et déconnexion")
-    driver.find_element(By.ID, "back-to-products").click()
+    cliquer(By.ID, "back-to-products")
+    trouver(By.CLASS_NAME, "inventory_list")  # on attend le retour sur la page produits
     pause()
     verifier(len(driver.find_elements(By.CLASS_NAME, "shopping_cart_badge")) == 0,
              "Le panier est vide après la commande")
-    driver.find_element(By.ID, "react-burger-menu-btn").click()
-    wait.until(EC.element_to_be_clickable((By.ID, "logout_sidebar_link"))).click()
-    bouton = wait.until(EC.visibility_of_element_located((By.ID, "login-button")))
+    cliquer(By.ID, "react-burger-menu-btn")
+    cliquer(By.ID, "logout_sidebar_link")
+    bouton = trouver(By.ID, "login-button")
     verifier(bouton.is_displayed(), "On est bien déconnecté")
 
 # Si une vérification ou une action a échoué, on arrive ici
@@ -147,7 +170,9 @@ except Exception as erreur:
     driver.save_screenshot("erreur.png")
     print()
     print("❌ TEST ÉCHOUÉ")
-    print("   Problème :", type(erreur).__name__, "-", erreur)
+    # .splitlines()[0] garde seulement la première ligne de l'erreur (sans le long "Stacktrace")
+    detail = str(erreur).splitlines()[0] if str(erreur) else ""
+    print("   Problème :", type(erreur).__name__, "-", detail)
     print("   Capture d'écran enregistrée : erreur.png")
 
 # Si tout s'est bien passé, on arrive ici
