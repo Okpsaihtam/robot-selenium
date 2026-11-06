@@ -4,7 +4,7 @@
 
 Test automatisé écrit en **Python** avec **Selenium**. Il pilote Google Chrome pour réaliser tout seul un parcours d'achat complet sur le site de démonstration [saucedemo.com](https://www.saucedemo.com), en vérifiant à chaque étape que tout fonctionne correctement.
 
-![Démo du robot](demo.gif)
+![Démo du robot](selenium-demo.gif)
 
 ## Ce que fait le test
 
